@@ -1,97 +1,71 @@
-# slopdogs/core
+# slopdogs-core
 
-Kernpaket für das SlopDogs-System - enthält die grundlegenden Komponenten für die Orchestrierung und Ausführung von Data-Processing-Einheiten (Dogs).
+The core of [SlopDogs](https://github.com/MartinSchmieschek/SlopDogs): the contract every Dog package builds against, and the runtime the server runs Kennels with. One package, two entry points:
 
-## Installation
+| Import | For | Contains |
+|---|---|---|
+| `@martinschmieschek/slopdogs-core` | Dog packages | `Dog`, `createPact`, entity types and interfaces, `FetchBaseDog`, cache and geo helpers, `DogEnvVar` |
+| `@martinschmieschek/slopdogs-core/runtime` | the server only | `KennelRun`, `SerializedDog` (sandbox), `DogWorkerGate` (slot cap, memory guard), `MimicDog`, `QueryRetriever`, `BodyRetriever`, WebSocket lobby, capability registry (`jsonStore`, `keys`) |
 
-Dieses Paket wird als lokale Dependency im gleichen Repo verwendet:
+The same repository also ships the type tool `@martinschmieschek/slopdogs-typedefs` (folder `typedefs/`, same version as core): the CLI `slopdogs-typedefs` writes `dist/type-defs.json` and `dist/surface.json` for a package, and `tsconfig.base.json` is the compiler base of every SlopDogs package.
 
-```json
-{
-  "dependencies": {
-    "slopdogs": "file:./packages/core"
-  }
-}
+## Install
+
+Pick **one** way per project and use it for every SlopDogs package there.
+
+**From the registry (GitHub Packages)** — what the server does. Add to the project's `.npmrc`:
+
+```
+@martinschmieschek:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
-Nach dem Hinzufügen: `npm install` ausführen, um das lokale Paket zu verlinken.
+`NPM_TOKEN` is a token with `read:packages`. Then pin the exact version:
 
-## Komponenten
-
-### Core Entities
-- `IHuntingDog` - Interface für alle Dogs
-- `Dog` - Abstrakte Basisklasse für Dogs
-- `IHuntingSeason` - Interface für die Season/Wave-Logik
-
-### Run Orchestration
-- `KennelRun` - Klasse für Kennel-Runs
-- `SeasonRunner` - Klasse für Wave-Ausführung
-- `IKennelConfig` - Interface für Kennel-Konfigurationen
-
-### SerializedDog
-- `SerializedDog` - Dynamische Code-Ausführung in VM
-
-## Verwendung
-
-```typescript
-import { 
-  KennelRun, 
-  IKennelConfig,
-  SeasonRunner,
-  SerializedDog,
-  Dog,
-  IHuntingDog,
-  IHuntingSeason
-} from 'slopdogs';
+```bash
+npm install --save-exact @martinschmieschek/slopdogs-core@0.3.0
 ```
 
-## Eigene Dogs erstellen
+**From the Git tag** — no registry, no token for a public repository. npm clones the tag, installs the dev dependencies and builds through `prepare`:
 
-```typescript
-import { Dog, IHuntingSeason } from 'slopdogs';
-
-class MyCustomDog extends Dog<MyDataType> {
-  // Überschreibe name von Dog
-  get name(): string {
-    return 'MyCustomDog';
-  }
-  
-  // Überschreibe required von Dog - definiert welche Dogs als required Parents benötigt werden
-  get required() {
-    return []; // Array von Dog-Klassen, die als required Parents benötigt werden
-  }
-  
-  // Überschreibe optional von Dog - definiert welche Dogs als optional Parents verwendet werden können
-  get optional() {
-    return []; // Array von Dog-Klassen, die als optional Parents verwendet werden können
-  }
-  
-  // Überschreibe yieldCollectorFactory von Dog - MUSS den Typ des Hundes (MyDataType) zurückgeben
-  protected yieldCollectorFactory = async (season: IHuntingSeason): Promise<MyDataType> => {
-    // Deine Logik hier
-    // WICHTIG: Der Rückgabetyp muss MyDataType sein (der generische Typ des Dogs)
-    return await fetch('https://api.example.com/data').then(r => r.json());
-  };
-}
+```bash
+npm install github:MartinSchmieschek/slopdogs-core#v0.3.0
 ```
 
-## SerializedDog Factory
+The type tool is not installable from Git: npm does not install from a subfolder of a repository. Take it from the registry or from the tarball attached to the GitHub release (`martinschmieschek-slopdogs-typedefs-<version>.tgz`). Dog packages need it only as a dev dependency.
 
-```typescript
-import { SerializedDog } from 'slopdogs';
+### One copy of core — always
 
-const serializedDogFactory = async (ids: string[]): Promise<Array<SerializedDog<unknown>>> => {
-  // Lade SerializedDog-Configs aus deiner Datenquelle
-  const configs = await loadConfigs(ids);
-  return configs.map(config => new SerializedDog(config, config.id));
-};
+The server must hold **exactly one** copy of core. Parents are matched by class identity (`instanceof Dog`), and core keeps singletons: the slot gate (`DogWorkerGate.shared`) and the capability registry for `jsonStore`/`keys`. A second copy matches no parent — silently — and doubles the slot cap.
+
+- Dog packages list core as a **peer dependency**, never as a dependency (the same holds for `geo-pact` and `dogs-demo`).
+- Whoever installs packages from Git or tarballs must name core with the **identical specification** everywhere it appears (root `dependencies`, `overrides`, workspaces). A tag in one place and a registry version in another is two copies.
+- Check: `npm ls @martinschmieschek/slopdogs-core` lists one version, deduped everywhere else.
+
+## Versions and the contract
+
+- Releases are tagged `v<version>`; core and the type tool always carry the same version.
+- `dist/surface.json` describes the contract of the main entry point (exports, classes, a hash per pact type). The release fails when something was removed, renamed or a pact type changed without a major bump (`npm run surface:check`). While core is `0.x`, a breaking contract change is a **minor** bump, and Dog packages declare their peer range within one minor (`^0.3.0`).
+- The runtime entry point is not part of the checked contract: a fix in sandbox, gate or memory guard is a patch that Dog packages accept through their peer range without a release of their own.
+
+## Develop
+
+```bash
+npm ci            # installs and builds (prepare)
+npm run build     # typedefs, core, then dist/type-defs.json and dist/surface.json
+npm test          # package tests (node:test) against dist/
+npm run lint      # ESLint, the inherited findings are tolerated via eslint-suppressions.json
+npm run format:check
 ```
 
-## Abhängigkeiten
+To try a change in the server before releasing it: `npm link` here, `npm link @martinschmieschek/slopdogs-core` in the server, rebuild here after each change (`npm run build`). The server must then link the Dog packages it uses from their repository as well, or point them at the same linked core — otherwise there are two copies (see above).
 
-- `vm2` - Für SerializedDog VM-Ausführung
-- `@types/node` - TypeScript-Typen
+## Release
 
-## Lizenz
+1. `npx changeset` with every change; `npm run version-packages` bumps core and `typedefs/` together and writes the changelog. Commit.
+2. `npx changeset tag` creates `v<version>`; `git push origin v<version>`.
+3. `.github/workflows/release.yml` builds, tests, runs the surface check against the last published version, publishes core and the type tool to GitHub Packages and attaches both `npm pack` tarballs to the GitHub release. It uses only `GITHUB_TOKEN` (`packages: write`, `contents: write`). A tag that did not trigger a run can be released via *Run workflow* with the tag name.
 
-[MIT](../../LICENSE) — Copyright (c) 2026 Martin.
+## License
+
+MIT

@@ -1,6 +1,6 @@
 {
   "name": "@martinschmieschek/slopdogs-core",
-  "version": "0.2.0-beta.0",
+  "version": "0.3.0",
   "description": "Kernpaket für das SlopDogs-System - enthält die grundlegenden Komponenten für die Orchestrierung und Ausführung von Data-Processing-Einheiten (Dogs)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,25 +33,37 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MartinSchmieschek/SlopDogs.git",
-    "directory": "packages/core"
+    "url": "https://github.com/MartinSchmieschek/slopdogs-core.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "engines": {
     "node": ">=18.19.0"
   },
   "author": "Martin",
   "license": "MIT",
-  "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json && slopdogs-typedefs build",
-    "prepare": "node -e \"let p=require('path'),d=process.cwd();while(d!==(d=p.dirname(d)))try{if(require(p.join(d,'package.json')).workspaces)process.exit(0)}catch{}process.exit(1)\" || npm run build"
+    "build": "tsc -p typedefs/tsconfig.json && tsc -p tsconfig.json && node typedefs/bin/slopdogs-typedefs.cjs build",
+    "prepare": "node -e \"let p=require('path'),d=process.cwd();while(d!==(d=p.dirname(d)))try{if(require(p.join(d,'package.json')).workspaces)process.exit(0)}catch{}process.exit(1)\" || npm run build",
+    "test": "tsc -p tsconfig.test.json && node --test \".test-build/**/*.test.js\"",
+    "lint": "eslint .",
+    "lint:prune": "eslint . --prune-suppressions",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "surface:check": "node scripts/surface-check.cjs",
+    "changeset": "changeset",
+    "version-packages": "changeset version && node scripts/sync-typedefs-version.cjs"
   },
   "dependencies": {
     "sucrase": "^3.35.1"
   },
   "devDependencies": {
-    "@martinschmieschek/slopdogs-typedefs": "file:../typedefs",
+    "@changesets/cli": "3.0.3",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "eslint": "10.12.0",
+    "prettier": "3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.71.2"
   }
 }

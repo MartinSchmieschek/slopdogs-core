@@ -1,5 +1,5 @@
 {
-  "extends": "@martinschmieschek/slopdogs-typedefs/tsconfig.base.json",
+  "extends": "./typedefs/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
