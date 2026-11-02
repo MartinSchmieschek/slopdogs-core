@@ -1,6 +1,6 @@
 {
   "name": "@martinschmieschek/slopdogs-core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Kernpaket für das SlopDogs-System - enthält die grundlegenden Komponenten für die Orchestrierung und Ausführung von Data-Processing-Einheiten (Dogs)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

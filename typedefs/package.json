@@ -1,6 +1,6 @@
 {
   "name": "@martinschmieschek/slopdogs-typedefs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Typ-Werkzeug der SlopDogs-Pakete: dist/type-defs.json (Pact- und Klassen-Typen) und dist/surface.json (Vertragsoberflaeche) je Paket, dieselbe Extraktion wie der Server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
