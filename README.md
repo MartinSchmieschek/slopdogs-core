@@ -1,11 +1,12 @@
 # slopdogs-core
 
-The core of [SlopDogs](https://github.com/MartinSchmieschek/SlopDogs): the contract every Dog package builds against, and the runtime the server runs Kennels with. One package, two entry points:
+The core of [SlopDogs](https://github.com/MartinSchmieschek/SlopDogs): the contract every Dog package builds against, and the runtime the server runs Kennels with. One package, three entry points:
 
 | Import | For | Contains |
 |---|---|---|
 | `@martinschmieschek/slopdogs-core` | Dog packages | `Dog`, `createPact`, entity types and interfaces, `FetchBaseDog`, cache and geo helpers, `DogEnvVar` |
 | `@martinschmieschek/slopdogs-core/runtime` | the server only | `KennelRun`, `SerializedDog` (sandbox), `DogWorkerGate` (slot cap, memory guard), `MimicDog`, `QueryRetriever`, `BodyRetriever`, WebSocket lobby, capability registry (`jsonStore`, `keys`) |
+| `@martinschmieschek/slopdogs-core/swaggrid` | the server only | Swaggrid: OpenAPI 3.x from run strata and herald, no domain dependency (Kennel `/docs`, `/openapi.json`) |
 
 The same repository also ships the type tool `@martinschmieschek/slopdogs-typedefs` (folder `typedefs/`, same version as core): the CLI `slopdogs-typedefs` writes `dist/type-defs.json` and `dist/surface.json` for a package, and `tsconfig.base.json` is the compiler base of every SlopDogs package.
 
@@ -46,7 +47,7 @@ The server must hold **exactly one** copy of core. Parents are matched by class 
 
 - Releases are tagged `v<version>`; core and the type tool always carry the same version.
 - `dist/surface.json` describes the contract of the main entry point (exports, classes, a hash per pact type). The release fails when something was removed, renamed or a pact type changed without a major bump (`npm run surface:check`). While core is `0.x`, a breaking contract change is a **minor** bump, and Dog packages declare their peer range within one minor (`^0.3.0`).
-- The runtime entry point is not part of the checked contract: a fix in sandbox, gate or memory guard is a patch that Dog packages accept through their peer range without a release of their own.
+- The runtime and swaggrid entry points are not part of the checked contract: a fix in sandbox, gate or memory guard is a patch that Dog packages accept through their peer range without a release of their own.
 
 ## Develop
 
